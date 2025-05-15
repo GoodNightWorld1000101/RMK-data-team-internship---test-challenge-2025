@@ -24,6 +24,8 @@ This function returns the departure and arrival times of the selected bus within
 
 3.Consider whether holidays should be taken into account.
 
+4.Test using polar against pandas
+
 ### Optional Tasks:
 1.Create an input window for selecting the bus route, bus stops, and time frame.
 
