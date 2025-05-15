@@ -2,11 +2,12 @@ import pandas as pd
 import os
 import zipfile
 import requests
+from datetime import datetime, timedelta
 from conf import URL,ZIPFILE,DATA_FOLDER_PATH,STOPS_PATH,STOP_TIMES_PATH,TRIPS_PATH,ROUTES_PATH
 
 def download_data_zip()-> bool:
     """ Function for downloading public transportation data folder from pilet.ee,
-    function creates a bus_data.zip file
+    function creates a bus_data.zip file.
     Returns:
         bool:returns 1 if download was successful otherwise 0.     
     """    
@@ -31,7 +32,7 @@ def get_bus_data(update_data:bool = False)->int:
     If the file bus_data.zip already exists then it extracts its contents, and then deletes the bus_data.zip file.
     
     Args:
-        update_data (bool): Value for deciding wheter or not update existing data by default False
+        update_data (bool, optional): Value for deciding wheter or not update existing data. Defaults to False.
     
     Returns:
         int: returns 0 if the bus_data folder already exists otherwise 1.
@@ -68,12 +69,12 @@ def filter_bus_data(bus_nr: str = '8', route_name: str = 'Väike-Õismäe - Äig
     Function returns list containing choosen bus's departure time from the start_stop and arrival time at end_stop bus stop.
 
     Args:
-        bus_nr (str): bus number by default '8'
-        route_name (str): name of the route that the bus drives by default'Väike-Õismäe - Äigrumäe'
-        start_stop (str):  name of the starting bus stop by default 'Zoo'
-        end_stop (str): name of the end bus stop by default 'Toompark'
-        start_time (str): start of the time frame by default '05:00:00'
-        end_time (str): end of the time frame by default '09:10:00'
+        bus_nr (str, optional): bus number. Defaults to '8'.
+        route_name (str, optional): name of the route that the bus drives. Defaults to 'Väike-Õismäe - Äigrumäe'.
+        start_stop (str, optional):  name of the starting bus stop. Defaults to 'Zoo'.
+        end_stop (str, optional): name of the end bus stop. Defaults to 'Toompark'.
+        start_time (str, optional): start of the time frame. Defaults to '05:00:00'.
+        end_time (str, optional): end of the time frame. Defaults to '09:10:00'.
 
     Returns:
         list: [ [start_stop_departure_time , end_stop_arrival_time], ... ]
@@ -115,4 +116,23 @@ def filter_bus_data(bus_nr: str = '8', route_name: str = 'Väike-Õismäe - Äig
 
     return result
 
+def calculate_probability_of_being_late(bus_times:list, home_bus:int = 300, bus_work:int = 240, meeting_time:str = '09:05:00')-> list:
+    """ Function calculates probability of being late based on the departure time of the person, 
+    and returns a list containing departure times and related probabilities. 
+    This function considers all the insertet values to be constants, 
+    thus if your leg were to hurt and your walk time increased the probabilities would not match the real world.  
 
+    Args:
+        bus_times (list): [ [bus_leave_time , bus_arrive_time], ... ]_
+        home_bus (int, optional): _description_. Defaults to 300.
+        bus_work (int, optional): _description_. Defaults to 240.
+        meeting_time (str, optional): _description_. Defaults to '09:05:00'.
+
+    Returns:
+        list:  [ [leave_time , probability], ... ]
+    """
+    walk_to_bus = timedelta(seconds=home_bus)
+    walk_to_work = timedelta(seconds=bus_work)
+    for bus in bus_times:
+        if 
+    
