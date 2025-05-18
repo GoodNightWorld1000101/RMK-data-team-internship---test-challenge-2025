@@ -5,26 +5,29 @@ import requests
 from datetime import datetime, timedelta
 from conf import URL,ZIPFILE,DATA_FOLDER_PATH,STOPS_PATH,STOP_TIMES_PATH,TRIPS_PATH,ROUTES_PATH
 
-def download_data_zip()-> bool:
+def download_data_zip(url:str = None)-> bool:
     """ Function for downloading public transportation data folder from pilet.ee,
     function creates a bus_data.zip file.
+    
+    Args:
+        url (str, optional): url for download data. Defaults to None.
     Returns:
-        bool:returns 1 if download was successful otherwise 0.     
+        bool:returns True if download was successful otherwise False.     
     """    
     try:
-        response = requests.get(URL)
+        response = requests.get(URL) if url == None else requests.get(url)
         
         if response.status_code == 200:
             with open(ZIPFILE, "wb") as f:
                 f.write(response.content)
             print("ZIP-file downloaded succesfully:", ZIPFILE)
-            return 1
+            return True
         else:
             print("Download failed, status:", response.status_code)
-            return 0
+            return False
     except EOFError:
          print("Download was unsuccesful, Unexpected Error.")
-         return 0
+         return False
          
 def get_bus_data(update_data:bool = False)->int:
     """ The function checks if the folder bus_data or the file bus_data.zip exists.
@@ -32,7 +35,7 @@ def get_bus_data(update_data:bool = False)->int:
     If the file bus_data.zip already exists then it extracts its contents, and then deletes the bus_data.zip file.
     
     Args:
-        update_data (bool, optional): Value for deciding wheter or not update existing data. Defaults to False.
+        update_data (bool, optional): Value for deciding whether or not update existing data. Defaults to False.
     
     Returns:
         int: returns 0 if the bus_data folder already exists otherwise 1.
@@ -64,7 +67,7 @@ def get_bus_data(update_data:bool = False)->int:
     print('Zip-file deletion was successful.')
     return 1
 
-def filter_bus_data(bus_nr: str = '8', route_name: str = 'Väike-Õismäe - Äigrumäe', start_stop: str = 'Zoo', end_stop: str = 'Toompark',start_time:str = '05:00:00',end_time:str = '09:10:00') -> list:
+def filter_bus_data(bus_nr: str = '8', route_name: str = 'Väike-Õismäe - Äigrumäe', start_stop: str = 'Zoo', end_stop: str = 'Toompark',start_time:str = '05:00:00',end_time:str = '09:30:00') -> list:
     """
     Function returns list containing choosen bus's departure time from the start_stop and arrival time at end_stop bus stop.
 
@@ -74,10 +77,10 @@ def filter_bus_data(bus_nr: str = '8', route_name: str = 'Väike-Õismäe - Äig
         start_stop (str, optional):  name of the starting bus stop. Defaults to 'Zoo'.
         end_stop (str, optional): name of the end bus stop. Defaults to 'Toompark'.
         start_time (str, optional): start of the time frame. Defaults to '05:00:00'.
-        end_time (str, optional): end of the time frame. Defaults to '09:10:00'.
+        end_time (str, optional): end of the time frame. Defaults to '09:30:00'.
 
     Returns:
-        list: [ [start_stop_departure_time , end_stop_arrival_time], ... ]
+        list[]: [ [start_stop_departure_time(datetime.time()) , end_stop_arrival_time(datetime.time())], ... ]
     """
     # Loading in data files from bus_data
     stops = pd.read_csv(STOPS_PATH)
@@ -116,23 +119,58 @@ def filter_bus_data(bus_nr: str = '8', route_name: str = 'Väike-Õismäe - Äig
 
     return result
 
-def calculate_probability_of_being_late(bus_times:list, home_bus:int = 300, bus_work:int = 240, meeting_time:str = '09:05:00')-> list:
-    """ Function calculates probability of being late based on the departure time of the person, 
-    and returns a list containing departure times and related probabilities. 
-    This function considers all the insertet values to be constants, 
-    thus if your leg were to hurt and your walk time increased the probabilities would not match the real world.  
+def calculate_probability_of_being_late(bus_times:list, walk_to_bus:int = 300, walk_to_work:int = 240, meeting_time:str = '09:05:00')-> list:
+    """ Function calculates probability of being late depending on the departure time of the person, 
+    and returns a list containing departure times and related probabilities.   
 
     Args:
-        bus_times (list): [ [bus_leave_time , bus_arrive_time], ... ]_
-        home_bus (int, optional): _description_. Defaults to 300.
-        bus_work (int, optional): _description_. Defaults to 240.
-        meeting_time (str, optional): _description_. Defaults to '09:05:00'.
+        bus_times (list): [ [bus_leave_time(datetime.time()) , bus_arrive_time(datetime.time())], ... ]_
+        walk_to_bus (int, optional): Time it takes to walk from home to the bus stop in seconds. Defaults to 300.
+        walk_to_work (int, optional): Time it takes to walk from bus stop to the meeting in seconds. Defaults to 240.
+        meeting_time (str, optional): Meeting start time "hours:minutes:seconds". Defaults to '09:05:00'.
 
     Returns:
-        list:  [ [leave_time , probability], ... ]
+        list:  [ [leave_time(str) , probability(int)], ... ]
     """
-    walk_to_bus = timedelta(seconds=home_bus)
-    walk_to_work = timedelta(seconds=bus_work)
-    for bus in bus_times:
-        if 
+    #converting time values
+    walk_to_bus = timedelta(seconds=walk_to_bus)
+    walk_to_work = timedelta(seconds=walk_to_work)
+    meeting_time = datetime.strptime(meeting_time,"%H:%M:%S")
+   
+    x_axis = []
+    y_axis = []
     
+    #insert_index and last_chance is used to add a data point exactly one second after the last viable bus has departed from the bus stop.
+    insert_index = None
+    last_chance = None
+    
+    for bus in bus_times:
+        
+        # Convert time objects to datetime for arithmetic
+        arrive_at_work_dt = datetime.combine(meeting_time.date(), bus[1]) + walk_to_work
+        home_departure_dt = datetime.combine(meeting_time.date(), bus[0]) - walk_to_bus
+        
+        #convert datetime object to string for x-axis labels
+        home_departure_str = home_departure_dt.strftime("%H:%M")
+        
+        #probability logic 
+        if arrive_at_work_dt <= meeting_time:
+            x_axis.append(home_departure_str)
+            y_axis.append(0)
+            last_chance = home_departure_dt
+            
+        elif y_axis[-1] == 0:
+            last_chance += timedelta(seconds=1)
+            insert_index = len(y_axis)
+            x_axis.append(home_departure_str)
+            y_axis.append(1)
+            
+        else:
+            x_axis.append(home_departure_str)
+            y_axis.append(1)
+
+    x_axis.insert(insert_index,last_chance.strftime("%H:%M"))
+    y_axis.insert(insert_index,1)
+            
+    return [x_axis,y_axis]
+     
