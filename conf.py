@@ -9,18 +9,3 @@ ROUTES_PATH = DATA_FOLDER_PATH +"/routes.txt"
 
 
 
-"""BUS_8_RELEVENT_STOPS= ["Zoo", 
-              "Looga", 
-              "Mustjõe", 
-              "Humala", 
-              "Pirni", 
-              "Lille",
-              "Ristiku", 
-              "Tehnika", 
-              "Toompark"]
-
-stop_areas_8_if = ['Haabersti' ,
-                   'Kristiine' ,
-                   'Kesklinn' ,
-                   'Harku vald' 
-                   ,'Anija vald']"""
