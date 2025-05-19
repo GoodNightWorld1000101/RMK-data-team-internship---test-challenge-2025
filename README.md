@@ -12,10 +12,12 @@ It might look something like this:
 ![image](https://github.com/user-attachments/assets/f635bdd3-b692-4525-87a6-2db267df1b80)
 
 ## My solution
+picture of my final solution:
+![image](https://github.com/user-attachments/assets/77174593-580f-443b-8c0a-3ca645efbb67)
 
 ### Dependencies
 
-Used libraries:
+1. Used libraries:
 - matplotlib.pyplot
 - pandas
 - zipfile
@@ -24,6 +26,9 @@ Used libraries:
 - datetime
 
 Python version: Python 3.11.2
+2. How downloaded data files are connected:
+- `routes.txt` and `trips.txt` connect on `route_id` -> `trips.txt` and `calendar.txt` connect on `service_id` -> `trips.txt` and `stop_times.txt` connect on `trip_id` -> `stop_times.txt` and `stops.txt` connect on `stop_id`.
+
 
 ### First Day
 First, I created a function to download public transportation data from `pilet.ee` and extract its contents into a folder named `bus_data`. 
@@ -37,18 +42,10 @@ I proceeded with the assumption that all given and derived values are constants,
 picture of the current plot design(it has incorrect data):
 ![image](https://github.com/user-attachments/assets/d7f8b160-a691-4d97-9559-6d1b7c7d3f62)
 
-
-
 ### TODO:
-1. Create a function to calculate the probability of being late based on departure and arrival times. done 
+1. Test using polar against pandas pending
 
-2. Create a plot with probabilities on the Y-axis and departure times (i.e., leaving home) on the X-axis. done
-
-3. Consider whether holidays should be taken into account. done
-
-4. Test using polar against pandas pending
-
-5. Create a documentation in github wiki
+2. Create a documentation in github wiki
 
 ### Optional Tasks(later plans for the project after the challenge results have been announced):
 1.Create an input window for selecting the bus route, bus stops, and time frame.
