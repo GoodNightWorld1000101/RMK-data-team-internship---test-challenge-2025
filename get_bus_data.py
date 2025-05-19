@@ -3,7 +3,7 @@ import os
 import zipfile
 import requests
 from datetime import datetime, timedelta
-from conf import URL,ZIPFILE,DATA_FOLDER_PATH,STOPS_PATH,STOP_TIMES_PATH,TRIPS_PATH,ROUTES_PATH
+from conf import URL,ZIPFILE,DATA_FOLDER_PATH,STOPS_PATH,STOP_TIMES_PATH,TRIPS_PATH,ROUTES_PATH,CALENDAR_PATH
 
 def download_data_zip(url:str = None)-> bool:
     """ Function for downloading public transportation data folder from pilet.ee,
@@ -87,13 +87,27 @@ def filter_bus_data(bus_nr: str = '8', route_name: str = 'Väike-Õismäe - Äig
     stop_times = pd.read_csv(STOP_TIMES_PATH)
     trips = pd.read_csv(TRIPS_PATH)
     routes = pd.read_csv(ROUTES_PATH)
-
-    # finding choosen bus route and it's trip_id's
+    calendar = pd.read_csv(CALENDAR_PATH)
+    
+    # selecting only busses that run on weekdays
+    calendar_match = calendar[(calendar['monday'] == 1) 
+                            & (calendar['tuesday'] == 1)
+                            & (calendar['wednesday'] == 1)
+                            & (calendar['thursday'] == 1)
+                            & (calendar['friday'] == 1)]
+    
+    # finding route_id for bus route 
     route_match = routes[(routes['route_short_name'] == bus_nr) & (routes['route_long_name'] == route_name)]
-    trips_match = trips[(trips['route_id'].isin(route_match['route_id'])) & (trips['trip_long_name'] == route_name)]
+    
+    # finding all the busses that have the choosen route and run on weekdays
+    trips_match = trips[(trips['route_id'].isin(route_match['route_id'])) 
+                        & (trips['trip_long_name'] == route_name) 
+                        & (trips['service_id'].isin(calendar_match['service_id']))]
+    
+    # finding all the bus stop departure times for all the trips_match busses and then joining them with stop info  
     stop_times_match = stop_times[stop_times['trip_id'].isin(trips_match['trip_id'])]
     stop_times_joined = stop_times_match.merge(stops[['stop_id', 'stop_name']], on='stop_id', how='left')
-
+    
     # finding the departure times from the starting bus stop
     departures = stop_times_joined[stop_times_joined['stop_name'] == start_stop][['trip_id', 'departure_time']]
     departures['departure_time'] = pd.to_datetime(departures['departure_time'], format='%H:%M:%S').dt.time
