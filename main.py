@@ -9,7 +9,6 @@ Plot the probability of Rita being late to the meeting depending on the time she
 '''
 
 #TODO:
-# Check data filtering, make sure it only returns bus departures with in the week.
 # Make a copy using polaris and compare runtimes.
     
 from get_bus_data import filter_bus_data, get_bus_data, calculate_probability_of_being_late
