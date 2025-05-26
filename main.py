@@ -8,7 +8,7 @@ Plot the probability of Rita being late to the meeting depending on the time she
 (Assuming she can only use the bus to get to work.)
 '''
 
-from get_bus_data import filter_bus_data_pl, get_bus_data, calculate_probability_of_being_late
+from get_bus_data import filter_bus_data, get_bus_data, calculate_probability_of_being_late
 import matplotlib.pyplot as plt
 #bus 8 timetable (Zoo peatusest) source:https://transport.tallinn.ee/#bus/8/a-b/00702-1
 
@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 data = get_bus_data()
 
 #getting bus departure and arrival times
-bus_dep_and_arr = filter_bus_data_pl() 
+bus_dep_and_arr = filter_bus_data() 
 
 #getting values for x and y axis
 leave_times, P_of_being_late = calculate_probability_of_being_late(bus_times=bus_dep_and_arr)

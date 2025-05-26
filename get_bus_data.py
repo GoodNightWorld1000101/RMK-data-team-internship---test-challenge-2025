@@ -68,7 +68,7 @@ def get_bus_data(update_data:bool = False)->int:
     print('Zip-file deletion was successful.')
     return 1
 
-def filter_bus_data_pl(bus_nr: str = '8', route_name: str = 'Väike-Õismäe - Äigrumäe', start_stop: str = 'Zoo', end_stop: str = 'Toompark',start_time:str = '05:00:00',end_time:str = '09:30:00',weekdays:bool=False) -> list:
+def filter_bus_data(bus_nr: str = '8', route_name: str = 'Väike-Õismäe - Äigrumäe', start_stop: str = 'Zoo', end_stop: str = 'Toompark',start_time:str = '05:00:00',end_time:str = '09:30:00',weekdays:bool=True) -> list:
     """
     Function returns list containing choosen bus's departure time from the start_stop and arrival time at end_stop bus stop.
 
