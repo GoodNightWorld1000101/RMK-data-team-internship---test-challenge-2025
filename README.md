@@ -43,8 +43,8 @@ picture of the current plot design(it has incorrect data):
 ![image](https://github.com/user-attachments/assets/d7f8b160-a691-4d97-9559-6d1b7c7d3f62)
 
 ### Day 4
-I tested the `filter_bus_data` function using both Pandas and Polars and found that Polars was 7.5 times faster. As a result, I updated the main.py to use Polars based function instead of Pandas.
-I also added weekdays parameter to filter_bus_data function so that you can choose whether to get weekday bus times or weekend bus times. 
+I tested the `filter_bus_data` function using both Pandas and Polars and found that Polars was 7.5 times faster. As a result, I updated the `main.py` to use Polars based function instead of Pandas.
+I also added weekdays parameter to `filter_bus_data` function so that you can choose whether to get weekday bus times or weekend bus times. 
 
 ### Optional Tasks(later plans for the project after the challenge results have been announced):
 1.Create an input window for selecting the bus route, bus stops, and time frame.
