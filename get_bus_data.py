@@ -1,3 +1,4 @@
+import polars as pl
 import pandas as pd
 import os
 import zipfile
@@ -67,7 +68,7 @@ def get_bus_data(update_data:bool = False)->int:
     print('Zip-file deletion was successful.')
     return 1
 
-def filter_bus_data(bus_nr: str = '8', route_name: str = 'Väike-Õismäe - Äigrumäe', start_stop: str = 'Zoo', end_stop: str = 'Toompark',start_time:str = '05:00:00',end_time:str = '09:30:00') -> list:
+def filter_bus_data_pd(bus_nr: str = '8', route_name: str = 'Väike-Õismäe - Äigrumäe', start_stop: str = 'Zoo', end_stop: str = 'Toompark',start_time:str = '05:00:00',end_time:str = '09:30:00') -> list:
     """
     Function returns list containing choosen bus's departure time from the start_stop and arrival time at end_stop bus stop.
 
@@ -133,6 +134,81 @@ def filter_bus_data(bus_nr: str = '8', route_name: str = 'Väike-Õismäe - Äig
 
     return result
 
+def filter_bus_data_pl(bus_nr: str = '8', route_name: str = 'Väike-Õismäe - Äigrumäe', start_stop: str = 'Zoo', end_stop: str = 'Toompark',start_time:str = '05:00:00',end_time:str = '09:30:00',weekdays:bool=False) -> list:
+    """
+    Function returns list containing choosen bus's departure time from the start_stop and arrival time at end_stop bus stop.
+
+    Args:
+        bus_nr (str, optional): Bus number. Defaults to '8'.
+        route_name (str, optional): Name of the route that the bus drives. Defaults to 'Väike-Õismäe - Äigrumäe'.
+        start_stop (str, optional):  Name of the starting bus stop. Defaults to 'Zoo'.
+        end_stop (str, optional): Name of the end bus stop. Defaults to 'Toompark'.
+        start_time (str, optional): Start of the time frame. Defaults to '05:00:00'.
+        end_time (str, optional): End of the time frame. Defaults to '09:30:00'.
+        weekdays (bool, optional): Parameter that determines whether to return weekend or weekday bus times. Defaults to True.
+
+    Returns:
+        list[]: [ [start_stop_departure_time(datetime.time()) , end_stop_arrival_time(datetime.time())], ... ]
+    """
+    # Loading in data files from bus_data
+    stops = pl.read_csv(STOPS_PATH)
+    stop_times = pl.read_csv(STOP_TIMES_PATH)
+    trips = pl.read_csv(TRIPS_PATH)
+    routes = pl.read_csv(ROUTES_PATH)
+    calendar = pl.read_csv(CALENDAR_PATH)
+    
+    # selecting only busses that run on either weekdays or weekends
+    calendar_match =  calendar.filter((pl.col('monday') == 1)) if weekdays else calendar.filter((pl.col('sunday') == 1))  
+    
+    # finding route_id for bus route 
+    route_match = routes.filter(
+        (pl.col('route_short_name') == bus_nr) & 
+        (pl.col('route_long_name') == route_name)
+    )
+    
+    # finding all the busses that have the choosen route and run on weekdays
+    trips_match = trips.filter(
+        (pl.col('route_id').is_in(route_match.select('route_id').to_series())) &
+        (pl.col('trip_long_name') == route_name) &
+        (pl.col('service_id').is_in(calendar_match.select('service_id').to_series()))
+    )
+    
+    # finding all the bus stop departure times for all the trips_match busses and then joining them with stop info  
+    stop_times_match = stop_times.filter(pl.col('trip_id').is_in(trips_match.select('trip_id').to_series().to_list()))
+    stop_times_joined = stop_times_match.join(stops.select(['stop_id', 'stop_name']), on='stop_id', how='left')
+    
+    # finding the departure times from the starting bus stop
+    departures = stop_times_joined.filter(pl.col('stop_name') == start_stop).select(['trip_id', 'departure_time'])
+    departures = departures.with_columns(
+        pl.col('departure_time').str.strptime(pl.Time, format='%H:%M:%S')
+    )
+    
+    start_time_obj = datetime.strptime(start_time, "%H:%M:%S").time()
+    end_time_obj = datetime.strptime(end_time, "%H:%M:%S").time()
+    departures = departures.filter(
+        (pl.col('departure_time') >= pl.lit(start_time_obj)) &
+        (pl.col('departure_time') <= pl.lit(end_time_obj))
+    )
+
+    # finding the arrival times at the end bus stop 
+    arrivals = stop_times_joined.filter(pl.col('stop_name') == end_stop).select(['trip_id', 'arrival_time'])
+    arrivals = arrivals.with_columns(
+        pl.col('arrival_time').str.strptime(pl.Time, format='%H:%M:%S')
+    )
+    arrivals = arrivals.filter(
+        (pl.col('arrival_time') >= pl.lit(start_time_obj)) &
+        (pl.col('arrival_time') <= pl.lit(end_time_obj))
+    )
+
+    # Joining departure times and arrival times based on trip_id
+    combined = departures.join(arrivals, on='trip_id')
+    combined_sorted = combined.sort('departure_time')
+
+    # converting combined table to list
+    result = combined_sorted.select(['departure_time', 'arrival_time']).to_numpy().tolist()
+
+    return result
+
 def calculate_probability_of_being_late(bus_times:list, walk_to_bus:int = 300, walk_to_work:int = 240, meeting_time:str = '09:05:00')-> list:
     """ Function calculates probability of being late depending on the departure time of the person, 
     and returns a list containing departure times and related probabilities.   
@@ -187,4 +263,3 @@ def calculate_probability_of_being_late(bus_times:list, walk_to_bus:int = 300, w
     y_axis.insert(insert_index,1)
             
     return [x_axis,y_axis]
-     
